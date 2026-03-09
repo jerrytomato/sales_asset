@@ -101,7 +101,6 @@ def main():
             "Conversion rate (mean)",
             min_value=0.01,
             max_value=0.9,
-            value=float(st.session_state.get("conv", 0.3)),
             step=0.01,
             key="conv",
         )
@@ -109,13 +108,12 @@ def main():
             "Certainty (higher = tighter)",
             min_value=10,
             max_value=200,
-            value=int(st.session_state.get("strength", 80)),
             step=5,
             help="Controls how concentrated the distribution is around the mean.",
             key="strength",
         )
-        conv = st.session_state.get("conv", conv)
-        strength = st.session_state.get("strength", strength)
+        conv = st.session_state["conv"]
+        strength = st.session_state["strength"]
 
         st.subheader("3) See the difference")
         st.write(
@@ -130,6 +128,59 @@ def main():
         st.markdown(
             "The line is the lie. The curve is reality: many possible outcomes around your best guess. Higher certainty tightens the curve; lower certainty widens it."
         )
+
+        st.subheader("4) Same average, different revenue reality")
+        st.write(
+            "Using the same average conversion rate in a single forecast hides the spread of possible revenue outcomes."
+        )
+
+        # Defaults, no extra inputs
+        leads = 1000
+        avg_deal = 5000
+        target = max(leads * conv * avg_deal, 1_500_000)
+
+        alpha = conv * strength
+        beta = (1 - conv) * strength
+        samples = np.random.beta(alpha, beta, size=100_000)
+        revenue_samples = leads * samples * avg_deal
+
+        point_forecast = leads * conv * avg_deal
+
+        st.text(
+            f"Point forecast: ${point_forecast:,.0f}  |  Leads: {leads:,}  |  Deal size: ${avg_deal:,.0f}"
+        )
+        st.text(f"Target: ${target:,.0f}")
+
+        # Histogram with point forecast line
+        hist = go.Figure()
+        hist.add_trace(
+            go.Histogram(
+                x=revenue_samples,
+                nbinsx=50,
+                marker_color="#3182ce",
+                opacity=0.75,
+            )
+        )
+        hist.add_vline(
+            x=point_forecast,
+            line_width=3,
+            line_dash="dash",
+            line_color="#e53e3e",
+            annotation_text="Point forecast",
+            annotation_position="top",
+        )
+        hist.update_layout(
+            margin=dict(l=20, r=20, t=40, b=40),
+            template="plotly_dark",
+            bargap=0.05,
+            xaxis_title="Revenue",
+            yaxis_title="Frequency",
+        )
+        hist.update_xaxes(tickformat="$,.0f")
+
+        st.plotly_chart(hist, width="stretch")
+
+        st.markdown("The average did not change.")
 
 
 if __name__ == "__main__":
