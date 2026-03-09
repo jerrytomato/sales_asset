@@ -103,6 +103,7 @@ def main():
             max_value=0.9,
             value=float(st.session_state.get("conv", 0.3)),
             step=0.01,
+            key="conv",
         )
         strength = st.slider(
             "Certainty (higher = tighter)",
@@ -111,8 +112,10 @@ def main():
             value=int(st.session_state.get("strength", 80)),
             step=5,
             help="Controls how concentrated the distribution is around the mean.",
+            key="strength",
         )
-        st.session_state.update({"conv": conv, "strength": strength})
+        conv = st.session_state.get("conv", conv)
+        strength = st.session_state.get("strength", strength)
 
         st.subheader("3) See the difference")
         st.write(
